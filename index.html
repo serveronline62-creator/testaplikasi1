@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="format-detection" content="telephone=no" />
     <title>📦 Order Komponen System</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -1677,6 +1678,33 @@
                 font-size: 0.78rem;
             }
         }
+
+        /* ===== TAMBAHAN UNTUK HILANGKAN IKON WA DOBEL ===== */
+        /* Mencegah browser mengubah nomor telepon menjadi link */
+        a[href^="tel"] {
+            pointer-events: none;
+            cursor: default;
+            color: inherit;
+            text-decoration: none;
+        }
+        /* Sembunyikan elemen tambahan yang mungkin disisipkan ekstensi */
+        td .wa-ext, 
+        td .wa-icon-extra,
+        td [data-wa] {
+            display: none !important;
+        }
+        /* Tampilan link WA kita sendiri */
+        .wa-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .wa-link:hover {
+            text-decoration: underline;
+            color: var(--accent);
+        }
     </style>
 </head>
 <body>
@@ -2061,19 +2089,18 @@
             return allOrders.filter(function(o) { return (o['STATUS'] || '').toUpperCase() === 'FINISH'; });
         }
 
-        // ===== FUNGSI HELPER HITUNG SELISIH HARI (lebih akurat) =====
+        // ===== FUNGSI HELPER HITUNG SELISIH HARI =====
         function calculateDaysBetween(date1, date2) {
             if (!date1 || !date2) return 0;
             var d1 = new Date(date1);
             var d2 = new Date(date2);
-            // Gunakan UTC agar tidak terpengaruh zona waktu
             var utc1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
             var utc2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
             var diffTime = Math.abs(utc2 - utc1);
             return Math.floor(diffTime / (1000 * 60 * 60 * 24));
         }
 
-        // ===== FUNGSI HITUNG JUMLAH HARI (di modal edit) =====
+        // ===== FUNGSI HITUNG JUMLAH HARI =====
         function editHitungJumlahHari() {
             if (!isAdmin) return;
             var tglTerima = document.getElementById('modalTglTerimaPart').value;
@@ -2507,7 +2534,7 @@
             });
         }
 
-        // ===== INLINE EDIT: Tgl Terima Part (perbaikan) =====
+        // ===== INLINE EDIT: Tgl Terima Part =====
         function editTglTerimaPart(docId, td) {
             if (!isAdmin) {
                 showToast('Hanya Admin yang bisa mengedit TGL TERIMA PART.', 'warning');
@@ -2544,7 +2571,6 @@
 
             var save = function() {
                 var newValue = input.value;
-                // Bandingkan dengan nilai asli dari order (YYYY-MM-DD atau '')
                 if (newValue === originalDate) {
                     td.textContent = currentValue || '-';
                     return;
@@ -2694,6 +2720,10 @@
 
                 var jmlDisplay = jml ? escapeHtml(jml) + ' hari' : '-';
 
+                // Format No. HP dengan ikon WA yang kita kendalikan
+                var hp = o['NO. HP'] || '';
+                var hpDisplay = hp ? '<a href="https://wa.me/' + hp.replace(/[^0-9]/g,'') + '" target="_blank" class="wa-link"><i class="fab fa-whatsapp"></i> ' + escapeHtml(hp) + '</a>' : '-';
+
                 h += '<tr class="' + (isNew ? 'new-row' : '') + '">' +
                     '<td>' + (i + 1) + '</td>' +
                     '<td><span class="status-badge ' + sc + '"><span class="status-dot"></span>' + escapeHtml(s) +
@@ -2709,7 +2739,7 @@
                     '<td>' + escapeHtml(o['PROD.'] || '') + '</td>' +
                     '<td>' + escapeHtml(o['LAYANAN'] || '') + '</td>' +
                     '<td class="name-cell">' + escapeHtml(o['NAMA KONSUMEN'] || '') + '</td>' +
-                    '<td>' + escapeHtml(o['NO. HP'] || '') + '</td>' +
+                    '<td>' + hpDisplay + '</td>' +
                     '<td class="editable-cell" ' + da + '>' + formatDateDisplay(to) + '</td>' +
                     '<td class="editable-cell" ondblclick="editTglTerimaPart(\'' + o._docId +
                     '\', this)" title="Double‑klik untuk edit (Admin only)" style="cursor:text;">' +
@@ -2779,6 +2809,10 @@
 
                 var jmlDisplay = jml ? escapeHtml(jml) + ' hari' : '-';
 
+                // Format No. HP dengan ikon WA yang kita kendalikan
+                var hp = o['NO. HP'] || '';
+                var hpDisplay = hp ? '<a href="https://wa.me/' + hp.replace(/[^0-9]/g,'') + '" target="_blank" class="wa-link"><i class="fab fa-whatsapp"></i> ' + escapeHtml(hp) + '</a>' : '-';
+
                 h += '<tr>' +
                     '<td>' + (i + 1) + '</td>' +
                     '<td><span class="status-badge finish"><span class="status-dot"></span>FINISH</span></td>' +
@@ -2793,7 +2827,7 @@
                     '<td>' + escapeHtml(o['PROD.'] || '') + '</td>' +
                     '<td>' + escapeHtml(o['LAYANAN'] || '') + '</td>' +
                     '<td class="name-cell">' + escapeHtml(o['NAMA KONSUMEN'] || '') + '</td>' +
-                    '<td>' + escapeHtml(o['NO. HP'] || '') + '</td>' +
+                    '<td>' + hpDisplay + '</td>' +
                     '<td class="' + cellClass + '" ' + editAction + o._docId + editActionClose + '>' + formatDateDisplay(
                         to) +
                     '</td>' +
