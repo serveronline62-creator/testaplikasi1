@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="format-detection" content="telephone=no" />
     <title>📦 Order Komponen System</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -1679,31 +1678,20 @@
             }
         }
 
-        /* ===== TAMBAHAN UNTUK HILANGKAN IKON WA DOBEL ===== */
-        /* Mencegah browser mengubah nomor telepon menjadi link */
-        a[href^="tel"] {
-            pointer-events: none;
-            cursor: default;
+        /* ===== TAMBAHAN CSS UNTUK MENCEGAH IKON DOBEL ===== */
+        .no-hp {
+            all: unset;
+            display: inline;
+            font-family: inherit;
+            font-size: inherit;
             color: inherit;
-            text-decoration: none;
+            pointer-events: none;
+            /* Mencegah ekstensi menempelkan elemen */
+            user-select: text;
         }
-        /* Sembunyikan elemen tambahan yang mungkin disisipkan ekstensi */
-        td .wa-ext, 
-        td .wa-icon-extra,
-        td [data-wa] {
+        .no-hp::before,
+        .no-hp::after {
             display: none !important;
-        }
-        /* Tampilan link WA kita sendiri */
-        .wa-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            color: var(--accent);
-            text-decoration: none;
-        }
-        .wa-link:hover {
-            text-decoration: underline;
-            color: var(--accent);
         }
     </style>
 </head>
@@ -2100,7 +2088,6 @@
             return Math.floor(diffTime / (1000 * 60 * 60 * 24));
         }
 
-        // ===== FUNGSI HITUNG JUMLAH HARI =====
         function editHitungJumlahHari() {
             if (!isAdmin) return;
             var tglTerima = document.getElementById('modalTglTerimaPart').value;
@@ -2674,7 +2661,7 @@
             input.addEventListener('blur', save);
         }
 
-        // ===== RENDER AKTIF =====
+        // ===== RENDER AKTIF (dengan anti-ikon dobel) =====
         function renderAktifTable() {
             var tb = document.getElementById('tableBody'),
                 es = document.getElementById('emptyState'),
@@ -2720,9 +2707,12 @@
 
                 var jmlDisplay = jml ? escapeHtml(jml) + ' hari' : '-';
 
-                // Format No. HP dengan ikon WA yang kita kendalikan
+                // === PERBAIKAN No. HP ===
                 var hp = o['NO. HP'] || '';
-                var hpDisplay = hp ? '<a href="https://wa.me/' + hp.replace(/[^0-9]/g,'') + '" target="_blank" class="wa-link"><i class="fab fa-whatsapp"></i> ' + escapeHtml(hp) + '</a>' : '-';
+                // Tambahkan karakter zero-width joiner agar tidak dikenali sebagai nomor telepon
+                var hpSafe = hp ? hp.split('').join('\u200D') : '';
+                var hpHtml = '<span class="no-hp" data-no-hp="' + escapeHtml(hp) + '">' + escapeHtml(hpSafe) +
+                '</span>';
 
                 h += '<tr class="' + (isNew ? 'new-row' : '') + '">' +
                     '<td>' + (i + 1) + '</td>' +
@@ -2739,7 +2729,7 @@
                     '<td>' + escapeHtml(o['PROD.'] || '') + '</td>' +
                     '<td>' + escapeHtml(o['LAYANAN'] || '') + '</td>' +
                     '<td class="name-cell">' + escapeHtml(o['NAMA KONSUMEN'] || '') + '</td>' +
-                    '<td>' + hpDisplay + '</td>' +
+                    '<td>' + hpHtml + '</td>' +
                     '<td class="editable-cell" ' + da + '>' + formatDateDisplay(to) + '</td>' +
                     '<td class="editable-cell" ondblclick="editTglTerimaPart(\'' + o._docId +
                     '\', this)" title="Double‑klik untuk edit (Admin only)" style="cursor:text;">' +
@@ -2762,7 +2752,7 @@
             }
         }
 
-        // ===== RENDER RIWAYAT =====
+        // ===== RENDER RIWAYAT (dengan anti-ikon dobel) =====
         function renderRiwayatTable() {
             var tb = document.getElementById('riwayatBody'),
                 es = document.getElementById('emptyRiwayat'),
@@ -2809,9 +2799,11 @@
 
                 var jmlDisplay = jml ? escapeHtml(jml) + ' hari' : '-';
 
-                // Format No. HP dengan ikon WA yang kita kendalikan
+                // === PERBAIKAN No. HP ===
                 var hp = o['NO. HP'] || '';
-                var hpDisplay = hp ? '<a href="https://wa.me/' + hp.replace(/[^0-9]/g,'') + '" target="_blank" class="wa-link"><i class="fab fa-whatsapp"></i> ' + escapeHtml(hp) + '</a>' : '-';
+                var hpSafe = hp ? hp.split('').join('\u200D') : '';
+                var hpHtml = '<span class="no-hp" data-no-hp="' + escapeHtml(hp) + '">' + escapeHtml(hpSafe) +
+                '</span>';
 
                 h += '<tr>' +
                     '<td>' + (i + 1) + '</td>' +
@@ -2827,7 +2819,7 @@
                     '<td>' + escapeHtml(o['PROD.'] || '') + '</td>' +
                     '<td>' + escapeHtml(o['LAYANAN'] || '') + '</td>' +
                     '<td class="name-cell">' + escapeHtml(o['NAMA KONSUMEN'] || '') + '</td>' +
-                    '<td>' + hpDisplay + '</td>' +
+                    '<td>' + hpHtml + '</td>' +
                     '<td class="' + cellClass + '" ' + editAction + o._docId + editActionClose + '>' + formatDateDisplay(
                         to) +
                     '</td>' +
@@ -3114,7 +3106,7 @@
         document.getElementById('inputModal').addEventListener('click', function(e) { if (e.target === this) closeInputModal(); });
         document.getElementById('editModal').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
 
-        console.log('✅ Aplikasi siap - User hanya bisa ubah status, Admin edit semua field.');
+        console.log('✅ Aplikasi siap - Ikon WhatsApp dobel telah diatasi.');
     </script>
 </body>
 </html>
