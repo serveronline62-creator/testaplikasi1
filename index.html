@@ -1812,7 +1812,7 @@
                                     <th>No. HP</th>
                                     <th>Tgl Order</th>
                                     <th>TGL TERIMA PART</th>
-                                    <th>Lama Pengiriman</th>
+                                    <th>Jumlah</th>
                                     <th>Order ke Pabrik</th>
                                     <th>Keterangan</th>
                                     <th>Aksi</th>
@@ -1859,7 +1859,7 @@
                                     <th>No. HP</th>
                                     <th>Tgl Order</th>
                                     <th>TGL TERIMA PART</th>
-                                    <th>Lama Pengiriman</th>
+                                    <th>Jumlah</th>
                                     <th>Order ke Pabrik</th>
                                     <th>Keterangan</th>
                                     <th>Aksi</th>
@@ -1945,7 +1945,7 @@
                         <input class="form-input" type="date" id="modalTglTerimaPart" onchange="editHitungJumlahHari()" />
                     </div>
                     <div class="form-group">
-                        <label class="form-label"><span class="editable-label"><i class="fas fa-pen edit-icon"></i> Lama Pengiriman</span></label>
+                        <label class="form-label"><span class="editable-label"><i class="fas fa-pen edit-icon"></i> Jumlah</span></label>
                         <div style="display:flex;align-items:center;gap:8px;">
                             <input class="form-input" type="number" id="modalJumlah" readonly style="background:var(--bg-card);cursor:default;font-weight:700;color:var(--accent);flex:1;" />
                             <span style="color:var(--text-secondary);font-weight:600;font-size:0.85rem;">hari</span>
@@ -2003,7 +2003,7 @@
 
         // ===== TEKNISI LIST (NAMA + NOMOR HP) =====
         var TEKNISI_LIST = [
-            { nama: "YANDRI OTTU", nomor: "6282313098943" },
+            { nama: "YANDRI OTTU", nomor: "6281234567890" },
             { nama: "HARMINDO LAMMA", nomor: "6281234567891" },
             { nama: "INOSENCIUS FA'OT", nomor: "6281234567892" },
             { nama: "RIZALDI ABDULLAH", nomor: "6281234567893" },
@@ -2132,7 +2132,7 @@
 
             // Kumpulkan semua data
             var fields = {
-               
+                'No. Order': val(order['No. Order']),
                 'Status': val(order['STATUS'] || 'PENDING'),
                 'Teknisi': val(order['TEKNISI']),
                 'Tgl Pengajuan': fmt(order['TGL PENGAJUAN ORD']),
@@ -2155,7 +2155,7 @@
 
             // Emoji untuk setiap field
             var emojis = {
-               
+                'No. Order': '📋',
                 'Status': '📋',
                 'Teknisi': '🔧',
                 'Tgl Pengajuan': '📅',
@@ -2171,7 +2171,7 @@
                 'No. HP': '📱',
                 'Tgl Order': '📅',
                 'TGL TERIMA PART': '📅',
-                'Lama Pengiriman': '⏳',
+                'Jumlah': '⏳',
                 'Order ke Pabrik': '🏗️',
                 'Keterangan': '📝'
             };
@@ -2597,7 +2597,7 @@
                     'Tgl Order': '',
                     'No. Order': orderNo,
                     'TGL TERIMA PART': tglTerima,
-                    'Lama Pengiriman': Lama Pengiriman,
+                    'JUMLAH': jumlah,
                     'ORDER KE PABRIK': d['ORDER KE PABRIK'] || '',
                     'Keterangan Pemenuhan': '',
                     'createdAt': firebase.firestore.FieldValue.serverTimestamp(),
