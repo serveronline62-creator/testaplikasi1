@@ -2148,6 +2148,7 @@
                 'No. HP': val(order['NO. HP']),
                 'Tgl Order': fmt(order['Tgl Order']),
                 'Tgl Terima Part': fmt(order['TGL TERIMA PART']),
+                'Lama Pengiriman': val(order['JUMLAH']) + (order['JUMLAH'] ? ' hari' : ''),
                 'No. Order': val(order['ORDER KE PABRIK']),
                 'Keterangan': val(order['Keterangan Pemenuhan'])
             };
