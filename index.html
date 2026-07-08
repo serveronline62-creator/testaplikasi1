@@ -1285,7 +1285,6 @@
             cursor: not-allowed;
             pointer-events: none;
         }
-        /* ===== WhatsApp button style ===== */
         .action-btn.whatsapp {
             color: #25D366;
         }
@@ -2004,7 +2003,7 @@
 
         // ===== TEKNISI LIST (NAMA + NOMOR HP) =====
         var TEKNISI_LIST = [
-            { nama: "YANDRI OTTU", nomor: "6285333071119" },
+            { nama: "YANDRI OTTU", nomor: "6281234567890" },
             { nama: "HARMINDO LAMMA", nomor: "6281234567891" },
             { nama: "INOSENCIUS FA'OT", nomor: "6281234567892" },
             { nama: "RIZALDI ABDULLAH", nomor: "6281234567893" },
@@ -2099,7 +2098,7 @@
             target.value = diffDays;
         }
 
-        // ===== WHATSAPP NOTIFICATION =====
+        // ===== WHATSAPP NOTIFICATION (PROFESSIONAL) =====
         function getTeknisiPhone(nama) {
             var found = TEKNISI_LIST.find(function(t) { return t.nama === nama; });
             return found ? found.nomor : null;
@@ -2109,30 +2108,91 @@
             var order = allOrders.find(function(o) { return o._docId === docId; });
             if (!order) return;
 
-            var namaTeknisi = order['TEKNISI'];
+            var namaTeknisi = order['TEKNISI'] || '-';
             var nomor = getTeknisiPhone(namaTeknisi);
             if (!nomor) {
                 showToast('Nomor HP teknisi tidak ditemukan untuk ' + namaTeknisi, 'error');
                 return;
             }
 
-            var status = order['STATUS'] || 'PENDING';
-            var noOrder = order['No. Order'] || '-';
-            var namaPart = order['NAMA PART'] || '-';
-            var namaKonsumen = order['NAMA KONSUMEN'] || '-';
-
-            var pesan = 'Halo *' + namaTeknisi + '*, status order komponen *' + noOrder + '* - *' + namaPart +
-                '* untuk konsumen *' + namaKonsumen + '* telah berubah menjadi *' + status + '*.';
-
-            if (status.toUpperCase() === 'READY') {
-                pesan += ' Part sudah siap, silakan diproses.';
-            } else if (status.toUpperCase() === 'PROSES') {
-                pesan += ' Sedang dalam proses pengerjaan.';
-            } else if (status.toUpperCase() === 'FINISH') {
-                pesan += ' Order telah selesai.';
-            } else if (status.toUpperCase() === 'PENDING') {
-                pesan += ' Menunggu konfirmasi.';
+            // Helper untuk format tanggal
+            function fmt(d) {
+                if (!d) return '-';
+                if (d.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    var p = d.split('-');
+                    return p[2] + '/' + p[1] + '/' + p[0];
+                }
+                return d;
             }
+
+            // Helper untuk nilai kosong
+            function val(v) {
+                return (v && v.trim()) ? v.trim() : '-';
+            }
+
+            // Kumpulkan semua data
+            var fields = {
+                'No. Order': val(order['No. Order']),
+                'Status': val(order['STATUS'] || 'PENDING'),
+                'Teknisi': val(order['TEKNISI']),
+                'Tgl Pengajuan': fmt(order['TGL PENGAJUAN ORD']),
+                'No. Service': val(order['NO. SERVICE CASE']),
+                'Type (IDNO)': val(order['TYPE (IDNO)']),
+                'No. Serie': val(order['NO. SERIE']),
+                'No Gudang': val(order['NO GUDANG']),
+                'Nama Part': val(order['NAMA PART']),
+                'QTY': val(order['QTY']),
+                'Prod.': val(order['PROD.']),
+                'Layanan': val(order['LAYANAN']),
+                'Nama Konsumen': val(order['NAMA KONSUMEN']),
+                'No. HP': val(order['NO. HP']),
+                'Tgl Order': fmt(order['Tgl Order']),
+                'TGL TERIMA PART': fmt(order['TGL TERIMA PART']),
+                'Jumlah': val(order['JUMLAH']) + (order['JUMLAH'] ? ' hari' : ''),
+                'Order ke Pabrik': val(order['ORDER KE PABRIK']),
+                'Keterangan': val(order['Keterangan Pemenuhan'])
+            };
+
+            // Emoji untuk setiap field
+            var emojis = {
+                'No. Order': '📋',
+                'Status': '📋',
+                'Teknisi': '🔧',
+                'Tgl Pengajuan': '📅',
+                'No. Service': '🆔',
+                'Type (IDNO)': '📌',
+                'No. Serie': '🔢',
+                'No Gudang': '🏢',
+                'Nama Part': '🧩',
+                'QTY': '📦',
+                'Prod.': '🏭',
+                'Layanan': '🛠️',
+                'Nama Konsumen': '👤',
+                'No. HP': '📱',
+                'Tgl Order': '📅',
+                'TGL TERIMA PART': '📅',
+                'Jumlah': '⏳',
+                'Order ke Pabrik': '🏗️',
+                'Keterangan': '📝'
+            };
+
+            // Bangun pesan
+            var pesan = '*NOTIFIKASI ORDER KOMPONEN*\n';
+            pesan += '━━━━━━━━━━━━━━━━━━━━━\n\n';
+            pesan += 'Kepada Yth. *' + fields['Teknisi'] + '*\n\n';
+            pesan += 'Dengan hormat,\n\n';
+            pesan += 'Kami informasikan bahwa status order komponen dengan rincian berikut:\n\n';
+
+            // Tambahkan semua field kecuali Teknisi (sudah di salam)
+            for (var key in fields) {
+                if (key === 'Teknisi') continue;
+                var emoji = emojis[key] || '•';
+                pesan += emoji + ' *' + key + '*: ' + fields[key] + '\n';
+            }
+
+            pesan += '\n━━━━━━━━━━━━━━━━━━━━━\n';
+            pesan += '*Terima kasih atas perhatiannya.*\n\n';
+            pesan += '*Order Komponen System*';
 
             var url = 'https://wa.me/' + nomor + '?text=' + encodeURIComponent(pesan);
             window.open(url, '_blank');
