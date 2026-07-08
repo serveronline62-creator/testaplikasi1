@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
     </script>
     <style>
-        /* ===== CSS LENGKAP (sama seperti sebelumnya) ===== */
+        /* ===== CSS (sama seperti sebelumnya) ===== */
         :root,
         [data-theme="dark"] {
             --bg-primary: #0b1120;
@@ -1877,7 +1877,12 @@
                 <form id="orderForm" onsubmit="handleSubmit(event)" novalidate>
                     <div class="form-section-title">Informasi Teknisi & Service</div>
                     <div class="form-grid">
-                        <div class="form-group"><label class="form-label">Teknisi <span class="required">*</span></label><select class="form-select" name="TEKNISI" required><option value="">-- Pilih --</option><option value="YANDRI OTTU">YANDRI OTTU</option><option value="HARMINDO LAMMA">HARMINDO LAMMA</option><option value="INOSENCIUS FA'OT">INOSENCIUS FA'OT</option><option value="RIZALDI ABDULLAH">RIZALDI ABDULLAH</option><option value="KRISTIAN OPENG">KRISTIAN OPENG</option><option value="MUHAMMAD FAUZI">MUHAMMAD FAUZI</option></select></div>
+                        <div class="form-group">
+                            <label class="form-label">Teknisi <span class="required">*</span></label>
+                            <select class="form-select" name="TEKNISI" id="teknisiSelect" required>
+                                <option value="">-- Pilih --</option>
+                            </select>
+                        </div>
                         <div class="form-group"><label class="form-label">Tgl Pengajuan <span class="required">*</span></label><input class="form-input" type="date" name="TGL PENGAJUAN ORD" id="inpTglPengajuan" required /></div>
                         <div class="form-group"><label class="form-label">No. Service Case</label><input class="form-input" type="text" name="NO. SERVICE CASE" placeholder="Opsional" /></div>
                     </div>
@@ -1911,12 +1916,10 @@
             <div class="modal-header"><h3><i class="fas fa-edit"></i> Edit Order</h3><button class="modal-close" onclick="closeEditModal()"><i class="fas fa-times"></i></button></div>
             <div class="modal-body">
                 <input type="hidden" id="modalRowIndex" />
-                <!-- Info part & konsumen tanpa nomor order -->
                 <div style="background:rgba(128,128,128,0.1);border-radius:var(--radius);padding:0.85rem 1rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <span style="font-size:0.78rem;color:var(--text-secondary);" id="modalPartInfo"></span>
                 </div>
 
-                <!-- STATUS - semua user bisa ubah -->
                 <div class="form-group">
                     <label class="form-label">Status</label>
                     <select class="form-select" id="modalStatus">
@@ -1927,7 +1930,6 @@
                     </select>
                 </div>
 
-                <!-- FIELD LAIN - selalu terlihat, tapi dinonaktifkan untuk non-admin -->
                 <div id="adminOnlyFields">
                     <div class="form-group">
                         <label class="form-label"><span class="editable-label"><i class="fas fa-pen edit-icon"></i> Tgl Order</span></label>
@@ -1954,7 +1956,6 @@
                     </div>
                 </div>
 
-                <!-- Pesan untuk non-admin -->
                 <div id="userOnlyMessage" style="display:none;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:var(--radius);padding:12px 16px;color:var(--info);font-size:0.85rem;">
                     <i class="fas fa-info-circle" style="margin-right:8px;"></i>
                     Anda hanya dapat mengubah <strong>Status</strong>. Field lainnya hanya dapat diedit oleh <strong>Admin</strong>.
@@ -1993,6 +1994,16 @@
 
         var ADMIN_EMAIL = 'admin@app.local';
         var isAdmin = false;
+
+        // ===== DAFTAR TEKNISI DENGAN NOMOR HP =====
+        var technicianList = [
+            { name: 'YANDRI OTTU', phone: '6281234567890' },
+            { name: 'HARMINDO LAMMA', phone: '6281234567891' },
+            { name: 'INOSENCIUS FA\'OT', phone: '6281234567892' },
+            { name: 'RIZALDI ABDULLAH', phone: '6281234567893' },
+            { name: 'KRISTIAN OPENG', phone: '6281234567894' },
+            { name: 'MUHAMMAD FAUZI', phone: '6281234567895' }
+        ];
 
         // ===== INDEXEDDB =====
         var CACHE_DB = 'OrderKomponenCache',
@@ -2061,9 +2072,32 @@
             return allOrders.filter(function(o) { return (o['STATUS'] || '').toUpperCase() === 'FINISH'; });
         }
 
+        // ===== FUNGSI NOTIFIKASI WHATSAPP =====
+        function sendWhatsAppNotification(phoneNumber, message) {
+            if (!phoneNumber) return;
+            // Bersihkan nomor: hanya angka
+            var cleanPhone = phoneNumber.replace(/\D/g, '');
+            if (cleanPhone.length === 0) return;
+            // Pastikan tidak ada + atau 00 di awal
+            if (cleanPhone.startsWith('0')) {
+                cleanPhone = '62' + cleanPhone.substring(1);
+            } else if (!cleanPhone.startsWith('62')) {
+                cleanPhone = '62' + cleanPhone;
+            }
+            var encoded = encodeURIComponent(message);
+            var url = 'https://wa.me/' + cleanPhone + '?text=' + encoded;
+            // Buka di tab baru
+            window.open(url, '_blank');
+        }
+
+        function getTechnicianPhoneByName(name) {
+            if (!name) return null;
+            var found = technicianList.find(function(t) { return t.name === name; });
+            return found ? found.phone : null;
+        }
+
         // ===== FUNGSI HITUNG JUMLAH HARI =====
         function editHitungJumlahHari() {
-            // Hanya admin yang bisa memicu perhitungan ini
             if (!isAdmin) return;
             var tglTerima = document.getElementById('modalTglTerimaPart').value;
             var docId = document.getElementById('modalRowIndex').value;
@@ -2263,25 +2297,18 @@
             document.getElementById(tab === 'aktif' ? 'panelAktif' : 'panelRiwayat').classList.add('active');
         }
 
-        auth.onAuthStateChanged(function(user) {
-            if (user) {
-                isAdmin = (user.email === ADMIN_EMAIL);
-                document.getElementById('authScreen').classList.add('hidden');
-                document.getElementById('appWrapper').classList.add('visible');
-                updateUserUI(user);
-                if (!window._appStarted) {
-                    window._appStarted = true;
-                    setDefaultDate();
-                    startDataEngine();
-                } else {
-                    renderAll();
-                }
-            } else {
-                document.getElementById('authScreen').classList.remove('hidden');
-                document.getElementById('appWrapper').classList.remove('visible');
-                window._appStarted = false;
-            }
-        });
+        // ===== POPULATE DROPDOWN TEKNISI =====
+        function populateTechnicianSelect() {
+            var sel = document.getElementById('teknisiSelect');
+            sel.innerHTML = '<option value="">-- Pilih --</option>';
+            technicianList.forEach(function(t) {
+                var opt = document.createElement('option');
+                opt.value = t.name;
+                opt.setAttribute('data-phone', t.phone);
+                opt.textContent = t.name;
+                sel.appendChild(opt);
+            });
+        }
 
         // ===== ENGINE =====
         async function startDataEngine() {
@@ -2462,11 +2489,15 @@
             sb.innerHTML = '<div class="spinner"></div> Menyimpan...';
             fl2.classList.add('active');
 
+            // Ambil nomor HP teknisi dari dropdown
+            var teknisiName = d['TEKNISI'];
+            var teknisiPhone = getTechnicianPhoneByName(teknisiName);
+
             generateOrderNo().then(function(orderNo) {
                 var user = auth.currentUser;
                 return db.collection(ORDERS_COL).add({
                     'STATUS': 'PENDING',
-                    'TEKNISI': d['TEKNISI'],
+                    'TEKNISI': teknisiName,
                     'TGL PENGAJUAN ORD': d['TGL PENGAJUAN ORD'],
                     'NO. SERVICE CASE': d['NO. SERVICE CASE'] || '',
                     'TYPE (IDNO)': d['TYPE (IDNO)'],
@@ -2488,12 +2519,25 @@
                     'createdBy': user ? user.email : '',
                     'createdByName': user ? (user.displayName || user.email.split('@')[0]) : ''
                 });
-            }).then(function() {
+            }).then(function(docRef) {
                 sb.disabled = false;
                 sb.innerHTML = '<i class="fas fa-paper-plane"></i> Simpan';
                 fl2.classList.remove('active');
                 closeInputModal();
                 document.getElementById('successOverlay').classList.add('active');
+
+                // Kirim notifikasi WhatsApp ke teknisi
+                if (teknisiPhone) {
+                    var message = 'Order komponen baru: ' + d['No. Order'] + '\n' +
+                        'Part: ' + d['NAMA PART'] + '\n' +
+                        'Konsumen: ' + d['NAMA KONSUMEN'] + '\n' +
+                        'Status: PENDING';
+                    setTimeout(function() {
+                        sendWhatsAppNotification(teknisiPhone, message);
+                    }, 500);
+                } else {
+                    showToast('Nomor HP teknisi tidak ditemukan.', 'warning');
+                }
             }).catch(function(er) {
                 sb.disabled = false;
                 sb.innerHTML = '<i class="fas fa-paper-plane"></i> Simpan';
@@ -2688,7 +2732,6 @@
                     k = o['Keterangan Pemenuhan'] || '',
                     da = 'onclick="openEditModal(\'' + o._docId + '\')"';
 
-                // Format jumlah dengan satuan "hari"
                 var jmlDisplay = jml ? escapeHtml(jml) + ' hari' : '-';
 
                 h += '<tr class="' + (isNew ? 'new-row' : '') + '">' +
@@ -2859,11 +2902,8 @@
             }
 
             document.getElementById('modalRowIndex').value = docId;
-
-            // Set status (semua user bisa lihat dan ubah)
             document.getElementById('modalStatus').value = (o['STATUS'] || 'PENDING').toUpperCase();
 
-            // Ambil referensi elemen
             var adminFields = document.getElementById('adminOnlyFields');
             var userMsg = document.getElementById('userOnlyMessage');
 
@@ -2873,29 +2913,24 @@
             var orderPabrikEl = document.getElementById('modalOrderPabrik');
             var keteranganEl = document.getElementById('modalKeterangan');
 
-            // Isi nilai semua field (admin & non-admin sama-sama melihat data)
             tglOrderEl.value = o['Tgl Order'] || '';
             tglTerimaEl.value = o['TGL TERIMA PART'] || '';
             jumlahEl.value = o['JUMLAH'] || '';
             orderPabrikEl.value = o['ORDER KE PABRIK'] || '';
             keteranganEl.value = o['Keterangan Pemenuhan'] || '';
 
-            // Tampilkan info part & konsumen (tanpa nomor order)
             document.getElementById('modalPartInfo').textContent = (o['NAMA PART'] || '-') + ' | ' + (o['NAMA KONSUMEN'] ||
                 '-');
 
             if (isAdmin) {
-                // Admin: semua field aktif & terlihat
                 adminFields.style.display = 'block';
                 userMsg.style.display = 'none';
                 tglOrderEl.disabled = false;
                 tglTerimaEl.disabled = false;
-                // Jumlah tetap readonly (otomatis)
                 jumlahEl.readOnly = true;
                 orderPabrikEl.disabled = false;
                 keteranganEl.disabled = false;
             } else {
-                // Non-admin: field terlihat tapi dinonaktifkan
                 adminFields.style.display = 'block';
                 userMsg.style.display = 'block';
                 tglOrderEl.disabled = true;
@@ -2910,17 +2945,19 @@
 
         function submitUpdate() {
             var docId = document.getElementById('modalRowIndex').value;
-            var status = document.getElementById('modalStatus').value;
+            var newStatus = document.getElementById('modalStatus').value.toUpperCase();
+            var order = allOrders.find(function(o) { return o._docId === docId; });
+            if (!order) return;
+
+            var oldStatus = (order['STATUS'] || '').toUpperCase();
 
             var updates = {
-                'STATUS': status
+                'STATUS': newStatus
             };
 
-            // Jika admin, tambahkan field lain
             if (isAdmin) {
                 var tglTerima = document.getElementById('modalTglTerimaPart').value;
-                var order = allOrders.find(function(o) { return o._docId === docId; });
-                var tglPengajuan = order ? order['TGL PENGAJUAN ORD'] : '';
+                var tglPengajuan = order['TGL PENGAJUAN ORD'] || '';
 
                 var jumlah = document.getElementById('modalJumlah').value;
                 if (tglPengajuan && tglTerima) {
@@ -2945,13 +2982,23 @@
             db.collection(ORDERS_COL).doc(docId).update(updates).then(function() {
                 sb.disabled = false;
                 sb.innerHTML = '<i class="fas fa-save"></i> Simpan';
-                var newStatus = updates['STATUS'].toUpperCase();
-                if (newStatus === 'FINISH') {
-                    showToast('Order selesai! Dipindahkan ke Riwayat.', 'success');
-                } else {
-                    showToast('Berhasil diupdate!', 'success');
-                }
                 closeEditModal();
+
+                // Kirim notifikasi WhatsApp jika status berubah
+                if (oldStatus !== newStatus) {
+                    var teknisiName = order['TEKNISI'] || '';
+                    var teknisiPhone = getTechnicianPhoneByName(teknisiName);
+                    if (teknisiPhone) {
+                        var msg = 'Status order ' + (order['No. Order'] || '') + ' berubah menjadi ' + newStatus +
+                            '\n' +
+                            'Part: ' + (order['NAMA PART'] || '') + '\n' +
+                            'Konsumen: ' + (order['NAMA KONSUMEN'] || '');
+                        setTimeout(function() {
+                            sendWhatsAppNotification(teknisiPhone, msg);
+                        }, 500);
+                    }
+                }
+                showToast('Berhasil diupdate!', 'success');
             }).catch(function(er) {
                 sb.disabled = false;
                 sb.innerHTML = '<i class="fas fa-save"></i> Simpan';
@@ -3004,7 +3051,6 @@
                     'Tgl Order', 'TGL TERIMA PART', 'Jumlah', 'Order ke Pabrik', 'Keterangan'
                 ];
                 var rows = fd.map(function(o, i) {
-                    // Format Jumlah dengan satuan "hari" untuk Excel
                     var jml = o['JUMLAH'] || '';
                     var jmlDisplay = jml ? jml + ' hari' : '';
                     return [i + 1, o['STATUS'] || '', o['TEKNISI'] || '', formatDateDisplay(o['TGL PENGAJUAN ORD'] ||
@@ -3088,7 +3134,30 @@
         document.getElementById('inputModal').addEventListener('click', function(e) { if (e.target === this) closeInputModal(); });
         document.getElementById('editModal').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
 
-        console.log('✅ Aplikasi siap - User hanya bisa ubah status, Admin edit semua field.');
+        // ===== INIT =====
+        populateTechnicianSelect();
+
+        auth.onAuthStateChanged(function(user) {
+            if (user) {
+                isAdmin = (user.email === ADMIN_EMAIL);
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('appWrapper').classList.add('visible');
+                updateUserUI(user);
+                if (!window._appStarted) {
+                    window._appStarted = true;
+                    setDefaultDate();
+                    startDataEngine();
+                } else {
+                    renderAll();
+                }
+            } else {
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('appWrapper').classList.remove('visible');
+                window._appStarted = false;
+            }
+        });
+
+        console.log('✅ Aplikasi siap - Notifikasi WhatsApp terintegrasi!');
     </script>
 </body>
 </html>
